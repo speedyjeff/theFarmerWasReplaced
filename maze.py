@@ -8,46 +8,27 @@
 # todo -
 #  two paths are generated every turn, BUT the exact same path (but reverse) is needed for the next round
 #   so reuse that path (faster?)
-#  opposite direciton could be a dictionary (faster?)
-#  get_index has a call to get_world_size and an check that never is used (faster?)
 #  the tree operates as a single parent tree, but that is not true as the maze evolves
 #  dfs init, on clear, is slow
 start_over = True
 on_loop = True
 reexplore_rate = 50
 size = get_world_size()
-size = 16
-substance = size * 2**(num_unlocked(Unlocks.Mazes) - 1)
+world_size = 33
+substance = world_size * 2**(num_unlocked(Unlocks.Mazes) - 1)
 
 max_int = 2147483648
 tree = []
 max_parent = -1
 directions = [North,South,East,West]
+opposite_direction = {North:South,South:North,East:West,West:East}
 coords = [(1,0),(-1,0),(0,1),(0,-1)]
 
 #
 # convert an y,x world coordinate to a 1D array index
 #
 def get_index(y,x):
-	dim = get_world_size()
-	if y < 0 or y >= dim or x < 0 or x >= dim:
-		return -1
-	return (y * dim) + x
-
-#
-# flip the direction
-#
-def opposite_direction(dir) :
-	if dir == North:
-		return South
-	elif dir == South:
-		return North
-	elif dir == East:
-		return West
-	elif dir == West:
-		return East
-	else:
-		return None
+	return (y * world_size) + x
 
 #
 # check if this is a treasure and collect or respawn the treasure
@@ -75,8 +56,8 @@ def dfs_init():
 			tree[i][West] = 0	
 	else:
 		# generate the maze tree structure (dfs)
-		for x in range(get_world_size()):
-			for y in range(get_world_size()):
+		for x in range(world_size):
+			for y in range(world_size):
 				tree.append({North: 0, South: 0, East: 0, West: 0})
 
 #
@@ -89,7 +70,7 @@ def dfs_explore(parent):
 	
 	# mark the parent
 	if parent != None:
-		dir = opposite_direction(parent)
+		dir = opposite_direction[parent]
 		tree[index][dir] = max_parent
 
 	# find unvisited neighbors
@@ -131,7 +112,7 @@ def dfs_explore(parent):
 			return ret
 
 		# move back to current position
-		odir = opposite_direction(dir)
+		odir = opposite_direction[dir]
 		move(odir)
 
 		# remove from neighbors
@@ -144,7 +125,7 @@ def dfs_explore(parent):
 #  is_from_home: need to flip the directions (eg going the opposite direction to current location)
 #  prune: find parts of the path that are duplicates (eg do not need to go home every time)
 #
-def dfs_back_home(y,x,is_from_home,path,prune):
+def dfs_back_home(y,x,is_from_home,path):
 	path_index = 0
 	while True:
 		if x == 0 and y == 0:
@@ -159,7 +140,7 @@ def dfs_back_home(y,x,is_from_home,path,prune):
 				x += coords[i][1]
 				dir = directions[i]
 				if is_from_home:
-					dir = opposite_direction(dir)
+					dir = opposite_direction[dir]
 				path.insert(path_index, (dir,y,x))
 				found = True
 				if not is_from_home:
@@ -168,7 +149,7 @@ def dfs_back_home(y,x,is_from_home,path,prune):
 		if not found:
 			print("failed to find parent")
 	
-	if prune and path_index > 0:
+	if path_index > 0:
 		# remove overlapping parts of the path, starting at path_index
 		start = path_index - 1
 		end = path_index
@@ -200,10 +181,10 @@ def dfs_get_path(dy,dx):
 	y = get_pos_y()
 	
 	# traverse from the destination back home (but insert forward movement)
-	path = dfs_back_home(dy,dx,True,[],False)
+	path = dfs_back_home(dy,dx,True,[])
 	
 	# traverse parents back up to home
-	path = dfs_back_home(y,x,False,path,True)
+	path = dfs_back_home(y,x,False,path)
 
 	return path
 
@@ -256,7 +237,7 @@ while True:
 			# go home
 			y = get_pos_y()
 			x = get_pos_x()
-			path = dfs_back_home(y,x,False,[],False)
+			path = dfs_back_home(y,x,False,[])
 			dfs_traverse_path(path,False)
 			# reexplore the maze
 			dfs_init()
