@@ -11,8 +11,8 @@
 start_over = True
 on_loop = True
 is_simulation = False
-reexplore_rate = 100
-world_size = 33 # get_world_size()
+reexplore_rate = 400
+world_size = 16 # get_world_size()
 substance = world_size * 2**(num_unlocked(Unlocks.Mazes) - 1)
 
 tree = []
@@ -106,11 +106,7 @@ def dfs_explore(parent):
 		move(dir)
 
 		# dfs on that neighbor
-		ret = dfs_explore(dir)
-		
-		# check for end
-		if ret < 0:
-			return ret
+		dfs_explore(dir)
 
 		# move back to current position
 		odir = opposite_direction[dir]
@@ -118,8 +114,6 @@ def dfs_explore(parent):
 
 		# remove from neighbors
 		neighbors.pop(index_dir)
-		
-	return 0
 
 # 
 # compute the path back to the origin (using parent information)
